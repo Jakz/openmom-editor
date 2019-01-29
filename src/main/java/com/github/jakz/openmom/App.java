@@ -24,8 +24,10 @@ import com.github.jakz.openmom.data.SpriteInfo;
 import com.github.jakz.openmom.data.SpriteInfoLBX;
 import com.github.jakz.openmom.data.Unit;
 import com.github.jakz.openmom.data.effect.AbilityEffect;
+import com.github.jakz.openmom.data.effect.CompoundEffect;
 import com.github.jakz.openmom.data.effect.Effect;
 import com.github.jakz.openmom.data.effect.EffectType;
+import com.github.jakz.openmom.data.effect.Modifier;
 import com.github.jakz.openmom.data.effect.MovementEffect;
 import com.github.jakz.openmom.data.effect.ParametricAbilityEffect;
 import com.github.jakz.openmom.data.effect.PropertyBonusEffect;
@@ -129,18 +131,40 @@ public class App
         }
       });
       
+      parser.registerUnserializer(Modifier.class, y -> {
+        if (!y.isSequence())
+        {
+          if (y.isInteger())
+            return new Modifier(y.asInt(), "additive");
+          else
+            return new Modifier(y.asFloat(), "additive-level-based");
+
+        }
+        else
+          return new Modifier(y.get(0).asFloat(), y.get(1).asString());
+      });
+      
       parser.registerUnserializer(Effect.class, y -> {
         String stype = y.get("type").asString();
         
+        YamlUnserializer<Modifier> muns = y.environment().findUnserializer(Modifier.class);
+        
         switch (stype)
         {
-        case "movement": return new MovementEffect(y.get("kind").asString());
-        case "ability": return new AbilityEffect(y.get("kind").asString());
-        case "unit_bonus": return new PropertyBonusEffect(EffectType.unit_bonus, y.get("property").asString(), y.get("value").asInt());
-        case "army_bonus": return new PropertyBonusEffect(EffectType.army_bonus, y.get("property").asString(), y.get("value").asInt());
-        case "parametric_ability": return new ParametricAbilityEffect(y.get("kind").asString(), y.get("value").asInt());
-        case "special_attack": return new SpecialAttackEffect(y.get("kind").asString(), y.get("value").asInt());
-
+          case "movement": return new MovementEffect(y.get("kind").asString());
+          case "ability": return new AbilityEffect(y.get("kind").asString());
+          case "unit_bonus": return new PropertyBonusEffect(EffectType.unit_bonus, y.get("property").asString(), muns.unserialize(y.get("modifier")));
+          case "army_bonus": return new PropertyBonusEffect(EffectType.army_bonus, y.get("property").asString(), muns.unserialize(y.get("modifier")));
+          case "wizard_bonus": return new PropertyBonusEffect(EffectType.wizard_bonus, y.get("property").asString(), muns.unserialize(y.get("modifier")));
+          case "parametric_ability": return new ParametricAbilityEffect(y.get("kind").asString(), y.get("value").asInt());
+          case "special_attack": return new SpecialAttackEffect(y.get("kind").asString(), y.get("value").asInt());
+          
+          case "compound":
+          {
+            ListUnserializer<Effect> unserializer = new ListUnserializer<>(Effect.class);
+            List<Effect> effects = unserializer.unserialize(y.get("elements"));
+            return new CompoundEffect(effects);
+          }
         }
         
         return Effect.unknown();

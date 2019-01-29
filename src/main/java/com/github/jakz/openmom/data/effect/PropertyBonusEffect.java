@@ -2,17 +2,17 @@ package com.github.jakz.openmom.data.effect;
 
 public class PropertyBonusEffect extends Effect
 {
-  public int value;
   public String property;
+  public Modifier modifier;
   
-  public PropertyBonusEffect(EffectType type, String property, int value)
+  public PropertyBonusEffect(EffectType type, String property, Modifier modifier)
   {
     super(type);
     this.property = property;
-    this.value = value;
+    this.modifier = modifier;
   }
 
   public String toString() {
-    return new StringBuilder().append("(").append(type).append(", ").append(property).append(", ").append(value).append(")").toString();
+    return String.format("(%s, %s, %s)", type, property, modifier.toString());
   }
 }

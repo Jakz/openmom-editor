@@ -8,6 +8,7 @@ public enum EffectType
   compound,
   unit_bonus,
   army_bonus,
+  wizard_bonus,
   parametric_ability,
   special_attack
 }
